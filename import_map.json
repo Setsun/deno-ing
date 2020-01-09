@@ -1,6 +1,5 @@
 {
   "imports": {
-    "http/": "https://deno.land/std/http/",
-    "lodash": "https://unpkg.com/lodash@4.17.15/lodash.js"
+    "std/": "https://deno.land/std/"
   }
 }

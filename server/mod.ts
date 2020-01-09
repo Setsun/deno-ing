@@ -1,12 +1,11 @@
-import { Cookie, getCookies, delCookie, setCookie } from "https://deno.land/std/http/cookie.ts";
+import { Cookie, getCookies, setCookie } from "https://deno.land/std/http/cookie.ts";
 import { serve, ServerRequest, Response } from "https://deno.land/std/http/server.ts";
-import { blue, green, red, yellow, underline, white, cyan } from "https://deno.land/std/fmt/colors.ts";
+import { blue, green, underline, cyan } from "https://deno.land/std/fmt/colors.ts";
 import { v4 } from "https://deno.land/std/uuid/mod.ts";
 import * as log from "https://deno.land/std/log/mod.ts";
 import { contentType } from "https://deno.land/std/media_types/mod.ts";
 
-// setup logs
-
+// setup logger
 await log.setup({
   handlers: {
     console: new log.handlers.ConsoleHandler("DEBUG"),
@@ -34,22 +33,22 @@ const port = 8800;
 
 log.info(`Starting server on port ${port}`);
 
-const debugWithTime = (text: string) =>
-  log.debug(`${cyan(Date.now().toString())} ${text}`);
+function requestLogLine(request: ServerRequest) {
+  const now = cyan(Date.now().toString());
+  const headers = JSON.stringify(request.headers);
+  const cookies = JSON.stringify(getCookies(request));
+  const method = green(request.method);
+  const url = underline(blue(request.url));
+
+  log.debug(`[${now}]: METHOD: ${method} URL: ${url} HEADERS: ${headers} COOKIES: ${cookies}`);
+}
 
 for await (const request of serve(`:${port}`)) {
-  const { method, url } = request;
   const cookies = getCookies(request);
-  const params = new URLSearchParams(url);
-  const timestamp = Date.now();
+  const params = new URLSearchParams(request.url);
 
   // server logs
-  debugWithTime(`${green(method)}`);
-
-  log.debug(green(JSON.stringify(request.headers)));
-
-  log.debug(JSON.stringify(cookies));
-  log.debug(JSON.stringify(params));
+  requestLogLine(request);
 
   // prepare the response
   const response: Response = {};
@@ -59,12 +58,8 @@ for await (const request of serve(`:${port}`)) {
   const newCookie: Cookie = { name: 'visitorId', value: visitorId };
   setCookie(response, newCookie);
 
-  log.debug(JSON.stringify(getCookies(request)));
-
-  log.info(v4.generate());
-
   const data = {
-    url,
+    url: request.url,
     params,
     cookies
   };
